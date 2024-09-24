@@ -27,7 +27,6 @@ import { bookmarksResponse, servicesResponse, widgetsResponse } from "utils/conf
 import ErrorBoundary from "components/errorboundry";
 import themes from "utils/styles/themes";
 import QuickLaunch from "components/quicklaunch";
-import { getStoredProvider, searchProviders } from "components/widgets/search/search";
 import { fetchWithIdentity, readIdentitySettings } from "utils/identity/identity-helpers";
 
 const ThemeToggle = dynamic(() => import("components/toggles/theme"), {
