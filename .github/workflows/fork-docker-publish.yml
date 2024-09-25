@@ -6,8 +6,6 @@ name: Docker
 # documentation.
 
 on:
-  schedule:
-    - cron: '20 0 * * *'
   push:
     branches:
       - main
@@ -23,6 +21,7 @@ on:
       - 'docs/**'
       - 'mkdocs.yml'
   merge_group:
+  workflow_dispatch:
 
 env:
   # Use docker.io for Docker Hub if empty
@@ -50,7 +49,6 @@ jobs:
 
   build:
     name: Docker Build & Push
-    if:  github.repository == 'discretizer/homepage'
     runs-on: ubuntu-latest
 
     needs:
