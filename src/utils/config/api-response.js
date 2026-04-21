@@ -240,7 +240,7 @@ export async function servicesResponse(perms, idGroups) {
       services: [...discoveredDockerGroup.services, ...discoveredKubernetesGroup.services, ...configuredGroup.services]
         .filter((service) => service)
         .sort(compareServices),
-      groups: [...configuredGroup.groups],
+      groups: [...(configuredGroup.groups ?? [])],
     };
 
     if (definedLayouts) {
