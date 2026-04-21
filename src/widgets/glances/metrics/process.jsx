@@ -4,6 +4,7 @@ import { useTranslation } from "next-i18next";
 import Block from "../components/block";
 import Container from "../components/container";
 
+import { parseVersionForUrl } from "utils/proxy/api-helpers";
 import useWidgetAPI from "utils/proxy/use-widget-api";
 
 const statusMap = {
@@ -22,10 +23,11 @@ export default function Component({ service }) {
   const { t } = useTranslation();
   const { widget } = service;
   const { chart, refreshInterval = defaultInterval, version = 3 } = widget;
+  const apiVersion = parseVersionForUrl(version, 3);
 
-  const memoryInfoKey = version === 3 ? 0 : "data";
+  const memoryInfoKey = apiVersion === 3 ? 0 : "rss";
 
-  const { data, error } = useWidgetAPI(service.widget, `${version}/processlist`, {
+  const { data, error } = useWidgetAPI(service.widget, `${apiVersion}/processlist`, {
     refreshInterval: Math.max(defaultInterval, refreshInterval),
   });
 
@@ -46,7 +48,7 @@ export default function Component({ service }) {
   let listYPosition = "bottom-4";
   if (chart) {
     headerYPosition = "-top-6";
-    listYPosition = "-top-3";
+    listYPosition = "-top-2";
   }
 
   return (
@@ -69,7 +71,7 @@ export default function Component({ service }) {
                 <div className="opacity-25 w-14 text-right">{item.cpu_percent.toFixed(1)}%</div>
                 <div className="opacity-25 w-14 text-right">
                   {t("common.bytes", {
-                    value: item.memory_info[memoryInfoKey] ?? item.memory_info.wset,
+                    value: item.memory_info[memoryInfoKey] ?? item.memory_info.data ?? item.memory_info.wset,
                     maximumFractionDigits: 0,
                   })}
                 </div>

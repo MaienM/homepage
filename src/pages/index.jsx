@@ -43,6 +43,17 @@ const Version = dynamic(() => import("components/version"), {
 
 const rightAlignedWidgets = ["weatherapi", "openweathermap", "weather", "openmeteo", "search", "datetime"];
 
+// Normalize language codes so older config values like zh-CN still point to Crowdin-provided ones
+const LANGUAGE_ALIASES = {
+  "zh-cn": "zh-Hans",
+};
+
+const normalizeLanguage = (language) => {
+  if (!language) return "en";
+  const alias = LANGUAGE_ALIASES[language.toLowerCase()];
+  return alias || language;
+};
+
 export async function getServerSideProps({ req }) {
   let logger;
   try {
@@ -54,6 +65,7 @@ export async function getServerSideProps({ req }) {
     const bookmarks = await bookmarksResponse(provider.getIdentity(req), groups);
     const widgets = await widgetsResponse(provider.getIdentity(req));
     const identityContext = provider.getContext(req);
+    const language = normalizeLanguage(settings.language);
 
     return {
       props: {
@@ -65,7 +77,7 @@ export async function getServerSideProps({ req }) {
           "/api/hash": false,
         },
         identityContext,
-        ...(await serverSideTranslations(settings.language ?? "en")),
+        ...(await serverSideTranslations(language)),
       },
     };
   } catch (e) {
@@ -225,8 +237,9 @@ function Home({ initialSettings, identityContext }) {
   );
 
   useEffect(() => {
-    if (settings.language) {
-      i18n.changeLanguage(settings.language);
+    const language = normalizeLanguage(settings.language);
+    if (language) {
+      i18n.changeLanguage(language);
     }
 
     if (settings.theme && theme !== settings.theme) {
@@ -407,6 +420,7 @@ function Home({ initialSettings, identityContext }) {
             "A highly customizable homepage (or startpage / application dashboard) with Docker and service API integrations."
           }
         />
+        {settings.disableIndexing && <meta name="robots" content="noindex, nofollow" />}
         {settings.base && <base href={settings.base} />}
         {settings.favicon ? (
           <>
@@ -424,6 +438,7 @@ function Home({ initialSettings, identityContext }) {
         )}
         <meta name="msapplication-TileColor" content={themes[settings.color || "slate"][settings.theme || "dark"]} />
         <meta name="theme-color" content={themes[settings.color || "slate"][settings.theme || "dark"]} />
+        <meta name="color-scheme" content="dark light"></meta>
       </Head>
 
       <Script src="/api/config/custom.js" />
@@ -431,7 +446,7 @@ function Home({ initialSettings, identityContext }) {
       <div
         className={classNames(
           settings.fullWidth ? "" : "container",
-          "relative m-auto flex flex-col justify-start z-10 h-full",
+          "relative m-auto flex flex-col justify-start z-10 h-full min-h-screen",
         )}
       >
         <QuickLaunch
@@ -439,7 +454,7 @@ function Home({ initialSettings, identityContext }) {
           searchString={searchString}
           setSearchString={setSearchString}
           isOpen={searching}
-          close={setSearching}
+          setSearching={setSearching}
         />
         <div
           id="information-widgets"
@@ -505,54 +520,72 @@ function Home({ initialSettings, identityContext }) {
 }
 
 export default function Wrapper({ initialSettings, fallback, identityContext }) {
-  const { themeContext } = useContext(ThemeContext);
-  const wrappedStyle = {};
+  const { theme } = useContext(ThemeContext);
+  const { color } = useContext(ColorContext);
+  let backgroundImage = "";
+  let opacity = initialSettings?.backgroundOpacity ?? 0;
   let backgroundBlur = false;
   let backgroundSaturate = false;
   let backgroundBrightness = false;
-  if (initialSettings && initialSettings.background) {
-    let opacity = initialSettings.backgroundOpacity ?? 1;
-    let backgroundImage = initialSettings.background;
-    if (typeof initialSettings.background === "object") {
-      backgroundImage = initialSettings.background.image;
-      backgroundBlur = initialSettings.background.blur !== undefined;
-      backgroundSaturate = initialSettings.background.saturate !== undefined;
-      backgroundBrightness = initialSettings.background.brightness !== undefined;
-      if (initialSettings.background.opacity !== undefined) opacity = initialSettings.background.opacity / 100;
+  if (initialSettings?.background) {
+    const bg = initialSettings.background;
+    if (typeof bg === "object") {
+      backgroundImage = bg.image || "";
+      if (bg.opacity !== undefined) {
+        opacity = 1 - bg.opacity / 100;
+      }
+      backgroundBlur = bg.blur !== undefined;
+      backgroundSaturate = bg.saturate !== undefined;
+      backgroundBrightness = bg.brightness !== undefined;
+    } else {
+      backgroundImage = bg;
     }
-    const opacityValue = 1 - opacity;
-    wrappedStyle.backgroundImage = `
-      linear-gradient(
-        rgb(var(--bg-color) / ${opacityValue}),
-        rgb(var(--bg-color) / ${opacityValue})
-      ),
-      url('${backgroundImage}')`;
-    wrappedStyle.backgroundPosition = "center";
-    wrappedStyle.backgroundSize = "cover";
   }
 
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+
+    html.classList.remove("dark", "scheme-dark", "scheme-light");
+    html.classList.toggle("dark", theme === "dark");
+    html.classList.add(theme === "dark" ? "scheme-dark" : "scheme-light");
+
+    const desiredThemeClass = `theme-${color || initialSettings.color || "slate"}`;
+    const themeClassesToRemove = Array.from(html.classList).filter(
+      (cls) => cls.startsWith("theme-") && cls !== desiredThemeClass,
+    );
+    if (themeClassesToRemove.length) {
+      html.classList.remove(...themeClassesToRemove);
+    }
+    if (!html.classList.contains(desiredThemeClass)) {
+      html.classList.add(desiredThemeClass);
+    }
+
+    // Remove any previously applied inline styles
+    body.style.backgroundImage = "";
+    body.style.backgroundColor = "";
+    body.style.backgroundAttachment = "";
+  }, [backgroundImage, opacity, theme, color, initialSettings.color]);
+
   return (
-    <div
-      id="page_wrapper"
-      className={classNames(
-        "relative",
-        initialSettings.theme && initialSettings.theme,
-        initialSettings.color && `theme-${initialSettings.color}`,
-        themeContext === "dark" ? "scheme-dark" : "scheme-light",
+    <>
+      {backgroundImage && (
+        <div
+          id="background"
+          aria-hidden="true"
+          style={{
+            backgroundImage: `linear-gradient(rgb(var(--bg-color) / ${opacity}), rgb(var(--bg-color) / ${opacity})), url('${backgroundImage}')`,
+          }}
+        />
       )}
-    >
-      <div
-        id="page_container"
-        className="fixed overflow-auto w-full h-full bg-theme-50 dark:bg-theme-800 transition-all"
-        style={wrappedStyle}
-      >
+      <div id="page_wrapper" className="relative h-full">
         <div
           id="inner_wrapper"
           tabIndex="-1"
           className={classNames(
-            "fixed overflow-auto w-full h-full",
+            "w-full h-full overflow-auto",
             backgroundBlur &&
-              `backdrop-blur${initialSettings.background.blur.length ? "-" : ""}${initialSettings.background.blur}`,
+              `backdrop-blur${initialSettings.background.blur?.length ? `-${initialSettings.background.blur}` : ""}`,
             backgroundSaturate && `backdrop-saturate-${initialSettings.background.saturate}`,
             backgroundBrightness && `backdrop-brightness-${initialSettings.background.brightness}`,
           )}
@@ -560,6 +593,6 @@ export default function Wrapper({ initialSettings, fallback, identityContext }) 
           <Index initialSettings={initialSettings} fallback={fallback} identityContext={identityContext} />
         </div>
       </div>
-    </div>
+    </>
   );
 }

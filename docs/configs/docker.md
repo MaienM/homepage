@@ -20,7 +20,7 @@ Since Docker supports connecting with TLS and client certificate authentication,
 ```yaml
 my-remote-docker:
   host: 192.168.0.101
-  port: 275
+  port: 2375
   tls:
     keyFile: tls/key.pem
     caFile: tls/ca.pem
@@ -64,6 +64,30 @@ Then, inside of your `docker.yaml` settings file, you'd configure the docker ins
 my-docker:
   host: dockerproxy
   port: 2375
+```
+
+Use `protocol: https` if you’re connecting through a reverse proxy (e.g., Traefik) that serves the Docker API over HTTPS:
+
+```yaml
+my-docker:
+  host: dockerproxy
+  port: 443
+  protocol: https
+```
+
+!!! note
+
+    Note: This does not require TLS certificates if the proxy handles encryption. Do not use `protocol: https` unless you’re sure the target host supports HTTPS.
+
+You can also include `headers` for the connection, for example, if you are using a reverse proxy that requires authentication:
+
+```yaml
+my-docker:
+  host: dockerproxy
+  port: 443
+  protocol: https
+  headers:
+    Authorization: Basic <base64-encoded-credentials>
 ```
 
 ## Using Socket Directly
@@ -153,6 +177,16 @@ labels:
   - homepage.widget.fields=["field1","field2"] # optional
 ```
 
+!!! note
+
+    If you use mapping syntax (`:`) for labels instead of list syntax (`-`), array values like `fields` must be wrapped in single quotes so they are passed as a string:
+
+    ```yaml
+    labels:
+      ...
+      homepage.widget.fields: '["field1","field2"]'
+    ```
+
 Multiple widgets can be specified by incrementing the index, e.g.
 
 ```yaml
@@ -164,6 +198,8 @@ labels: ...
   - homepage.widgets[1].url=http://uptimekuma.home
   - homepage.widgets[1].slug=youreventslughere
 ```
+
+To pass custom HTTP headers with a widget request when using labels, use the same dot-notation: `homepage.widget.headers.X-Auth-Key=secret` (or `homepage.widgets[0].headers.X-Auth-Key=secret` when multiple widgets are present).
 
 You can add specify fields for e.g. the [CustomAPI](../widgets/services/customapi.md) widget by using array-style dot notation:
 
@@ -247,4 +283,4 @@ You can show the docker stats by clicking the status indicator but this can also
   showStats: true
 ```
 
-Also see the settings for [show docker stats](settings.md#show-docker-stats).
+Also see the settings for [show docker stats](settings.md#show-container-stats).

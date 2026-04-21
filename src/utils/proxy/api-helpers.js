@@ -6,10 +6,26 @@ export function formatApiCall(url, args) {
     if (key === "url") {
       value = value.replace(/\/+$/, ""); // remove trailing slashes
     }
-    return value || "";
+    return value?.toString() || "";
   };
 
   return url.replace(find, replace).replace(find, replace);
+}
+
+export function parseVersionForUrl(version, defaultValue = null) {
+  if (version === undefined || version === null || version === "") {
+    return defaultValue;
+  }
+
+  if (typeof version === "number") {
+    return Number.isInteger(version) && version >= 0 ? version : defaultValue;
+  }
+
+  if (typeof version === "string" && /^\d+$/.test(version)) {
+    return Number(version);
+  }
+
+  return defaultValue;
 }
 
 export function getURLSearchParams(widget, endpoint) {

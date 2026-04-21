@@ -3,6 +3,7 @@ import { useTranslation } from "next-i18next";
 import Block from "../components/block";
 import Container from "../components/container";
 
+import { parseVersionForUrl } from "utils/proxy/api-helpers";
 import useWidgetAPI from "utils/proxy/use-widget-api";
 
 function Swap({ quicklookData, className = "" }) {
@@ -31,7 +32,8 @@ function CPU({ quicklookData, className = "" }) {
 
   return (
     quicklookData &&
-    quicklookData.cpu && (
+    quicklookData.cpu !== undefined &&
+    quicklookData.cpu !== null && (
       <div className="text-xs flex place-content-between">
         <div className={className}>{t("glances.cpu")}</div>
         <div className={className}>
@@ -74,12 +76,13 @@ const defaultSystemInterval = 30000; // This data (OS, hostname, distribution) i
 export default function Component({ service }) {
   const { widget } = service;
   const { chart, refreshInterval = defaultInterval, version = 3 } = widget;
+  const apiVersion = parseVersionForUrl(version, 3);
 
-  const { data: quicklookData, errorL: quicklookError } = useWidgetAPI(service.widget, `${version}/quicklook`, {
+  const { data: quicklookData, errorL: quicklookError } = useWidgetAPI(service.widget, `${apiVersion}/quicklook`, {
     refreshInterval,
   });
 
-  const { data: systemData, errorL: systemError } = useWidgetAPI(service.widget, `${version}/system`, {
+  const { data: systemData, errorL: systemError } = useWidgetAPI(service.widget, `${apiVersion}/system`, {
     refreshInterval: defaultSystemInterval,
   });
 
@@ -109,10 +112,10 @@ export default function Component({ service }) {
   return (
     <Container chart={chart}>
       {chart && (
-        <div className="bg-linear-to-br from-theme-500/30 via-theme-600/20 to-theme-700/10 absolute -top-10 -left-2 -right-2 -bottom-2 h-[calc(100%+3em)] w-[calc(100%+1em)]" />
+        <div className="bg-linear-to-br from-theme-500/30 via-theme-600/20 to-theme-700/10 absolute -top-20 -left-2 -right-2 -bottom-2" />
       )}
 
-      <Block position="-top-6 right-2">
+      <Block position={chart ? "-top-6 right-2" : "top-3 right-2"}>
         {quicklookData && quicklookData.cpu_name && chart && (
           <div className="text-[0.6rem] opacity-50">{quicklookData.cpu_name}</div>
         )}
@@ -124,7 +127,7 @@ export default function Component({ service }) {
           </div>
         )}
 
-        <div className="w-[4rem]">{!chart && <Swap quicklookData={quicklookData} className="opacity-25" />}</div>
+        <div>{!chart && <Swap quicklookData={quicklookData} className="opacity-25 ml-2" />}</div>
       </Block>
 
       {chart && (
@@ -136,18 +139,18 @@ export default function Component({ service }) {
       )}
 
       {!chart && (
-        <Block position="bottom-3 left-3 w-[4rem]">
-          <CPU quicklookData={quicklookData} className="opacity-75" />
+        <Block position="bottom-3 left-3">
+          <CPU quicklookData={quicklookData} className="opacity-75 mr-2" />
         </Block>
       )}
 
-      <Block position="bottom-3 right-2 w-[4rem]">
-        {chart && <CPU quicklookData={quicklookData} className="opacity-50" />}
+      <Block position="bottom-3 right-2">
+        {chart && <CPU quicklookData={quicklookData} className="opacity-50 ml-2" />}
 
-        {chart && <Mem quicklookData={quicklookData} className="opacity-50" />}
-        {!chart && <Mem quicklookData={quicklookData} className="opacity-75" />}
+        {chart && <Mem quicklookData={quicklookData} className="opacity-50 ml-2" />}
+        {!chart && <Mem quicklookData={quicklookData} className="opacity-75 ml-2" />}
 
-        {chart && <Swap quicklookData={quicklookData} className="opacity-50" />}
+        {chart && <Swap quicklookData={quicklookData} className="opacity-50 ml-2" />}
       </Block>
     </Container>
   );

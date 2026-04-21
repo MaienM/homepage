@@ -12,7 +12,6 @@ hide:
 - Check config/logs/homepage.log, on docker simply e.g. `docker logs homepage`. This may provide some insight into the reason for an error.
 - Check the browser error console, this can also sometimes provide useful information.
 - Consider setting the `ENV` variable `LOG_LEVEL` to `debug`.
-- If certain widgets are failing when connecting to public APIs, consider [disabling IPv6](#disabling-ipv6).
 
 ## Service Widget Errors
 
@@ -20,7 +19,7 @@ All service widgets work essentially the same, that is, homepage makes a proxied
 
 1.  URLs should not end with a / or other API path. Each widget will handle the path on its own.
 
-2.  All services with a widget require a unique name.
+2.  All services with a widget require a unique name as well as a unique group (and all subgroups) name.
 
 3.  Verify the homepage installation can connect to the IP address or host you are using for the widget `url`. This is most simply achieved by pinging the server from the homepage machine, in Docker this means _from inside the container_ itself, e.g.:
 
@@ -67,17 +66,3 @@ All service widgets work essentially the same, that is, homepage makes a proxied
 ## Missing custom icons
 
 If, after correctly adding and mapping your custom icons via the [Icons](../configs/services.md#icons) instructions, you are still unable to see your icons please try recreating your container.
-
-## Disabling IPv6
-
-If you are having issues with certain widgets that are unable to reach public APIs (e.g. weather), in certain setups you may need to disable IPv6. You can set the environment variable `HOMEPAGE_PROXY_DISABLE_IPV6` to `true` to disable IPv6 for the homepage proxy.
-
-Alternatively, you can use the `sysctls` option in your docker-compose file to disable IPv6 for the homepage container completely:
-
-```yaml
-services:
-  homepage:
-    ...
-    sysctls:
-      - net.ipv6.conf.all.disable_ipv6=1
-```

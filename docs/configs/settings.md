@@ -101,13 +101,79 @@ theme: dark # or light
 
 ## Color Palette
 
-You can configured a fixed color palette (and disable the palette switcher) by passing the `color` option, like so:
+You can configure a fixed color palette (and disable the palette switcher) by passing the `color` option, like so:
 
 ```yaml
 color: slate
 ```
 
 Supported colors are: `slate`, `gray`, `zinc`, `neutral`, `stone`, `amber`, `yellow`, `lime`, `green`, `emerald`, `teal`, `cyan`, `sky`, `blue`, `indigo`, `violet`, `purple`, `fuchsia`, `pink`, `rose`, `red`, `white`
+
+## Block Highlight Levels
+
+You can override the default Tailwind classes applied when a widget highlight rule resolves to the `good`, `warn`, or `danger` level.
+
+```yaml
+blockHighlights:
+  levels:
+    good: "bg-emerald-500/40 text-emerald-950 dark:bg-emerald-900/60 dark:text-emerald-400"
+    warn: "bg-amber-300/30 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200"
+    danger: "bg-rose-700/45 text-rose-200 dark:bg-rose-950/70 dark:text-rose-400"
+```
+
+Any unspecified level falls back to the built-in defaults.
+
+## Progressive Web App (PWA)
+
+A progressive web app is an app that can be installed on a device and provide user experience like a native app. Homepage comes with built-in support for PWA with some default configurations, but you can customize them.
+
+More information on PWAs can be found in [MDN Web Docs](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps).
+
+### App icons
+
+You can set custom icons for installable apps. More information about how you can set them can be found in the [MDN Web Docs](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Manifest/Reference/icons).
+
+The default value is the Homepage icon in sizes 192x192 and 512x512.
+
+```yaml
+pwa:
+  icons:
+    - src: https://developer.mozilla.org/favicon-192x192.png
+      type: image/png
+      sizes: 192x192
+    - src: https://developer.mozilla.org/favicon-512x512.png
+      type: image/png
+      sizes: 512x512
+```
+
+For icon `src` you can pass either full URL or a local path relative to the `/app/public` directory. See [Background Image](#background-image) for more detailed information on how to provide your own files.
+
+### Shortcuts
+
+Shortcuts can be used to specify links to tabs, to be preselected when the homepage is opened as an app.
+More information about how you can set them can be found in the [MDN Web Docs](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Manifest/Reference/shortcuts).
+
+```yaml
+pwa:
+  shortcuts:
+    - name: First
+      url: "/#first" # opens the first tab
+    - name: Second
+      url: "/#second" # opens the second tab
+    - name: Third
+      url: "/#third" # opens the third tab
+```
+
+### Other PWA configurations
+
+Homepage sets few other PWA configurations, that are based on global settings in `settings.yaml`:
+
+- `name`, `short_name` - Both equal to the [`title`](#title) setting.
+- `theme_color`, `background_color` - Both based on the [`color`](#color-palette) and [`theme`](#theme) settings.
+- `display` - It is always set to "standalone".
+- `start_url` - Equal to the [`startUrl`](#start-url) setting.
+
+More information for wach of the PWA configurations can be found in the [MDN Web Docs](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Manifest/Reference).
 
 ## Layout
 
@@ -264,7 +330,7 @@ fullWidth: true
 
 ### Maximum Group Columns
 
-You can set the maximum number of columns of groups on larger screen sizes (note this is only for groups with the default `style: columns`, not groups with `stle: row`) by adding:
+You can set the maximum number of columns of groups on larger screen sizes (note this is only for groups with the default `style: columns`, not groups with `style: row`) by adding:
 
 ```yaml
 maxGroupColumns: 8 # default is 4 for services, 6 for bookmarks, max 8
@@ -382,7 +448,9 @@ Set your desired language using:
 language: fr
 ```
 
-Currently supported languages: ca, de, en, es, fr, he, hr, hu, it, nb-NO, nl, pt, ru, sv, vi, zh-CN, zh-Hant
+Currently supported languages: ca, de, en, es, fr, he, hr, hu, it, nb-NO, nl, pt, ru, sv, vi, zh-Hans (Simplified), zh-Hant (Traditional)
+
+`zh-CN` will still work and is automatically mapped to `zh-Hans` for backwards compatibility.
 
 You can also specify locales e.g. for the DateTime widget, e.g. en-AU, en-GB, etc.
 
@@ -441,6 +509,7 @@ There are a few optional settings for the Quick Launch feature:
 - `showSearchSuggestions`: show search suggestions for the internet search. If this is not specified then the setting will be inherited from the search widget. If it is not specified there either, it will default to false. For custom providers the `suggestionUrl` needs to be set in order for this to work.
 - `provider`: search engine provider. If none is specified it will try to use the provider set for the Search Widget, if neither are present then internet search will be disabled.
 - `hideVisitURL`: disable detecting and offering an option to open URLs. This is false by default, enabling the feature.
+- `mobileButtonPosition`: enables and sets the position of the mobile quicklaunch button. Options are `top-left`, `top-right`, `bottom-left`, `bottom-right`. This is empty by default, disabling the feature.
 
 ```yaml
 quicklaunch:
@@ -485,9 +554,9 @@ logpath: /logfile/path
 
 By default, logs are sent both to `stdout` and to a file at the path specified. This can be changed by setting the `LOG_TARGETS` environment variable to one of `both` (default), `stdout` or `file`.
 
-## Show Docker Stats
+## Show Container Stats
 
-You can show all docker stats expanded in `settings.yaml`:
+You can show all docker or proxmox stats expanded in `settings.yaml`:
 
 ```yaml
 showStats: true
@@ -556,6 +625,21 @@ or per service widget (`services.yaml`) with:
 ```
 
 If either value is set to true, the error message will be hidden.
+
+## Disable Search Engine Indexing
+
+You can request that search engines not to index your Homepage instance by enabling the `disableIndexing` setting.
+
+```yaml
+disableIndexing: true
+```
+
+When enabled, this will:
+
+- Disallow all crawlers in `robots.txt`
+- Add `<meta name="robots" content="noindex, nofollow">` tags to prevent indexing
+
+By default this feature is disabled.
 
 ## Identity Based Visibiltiy
 

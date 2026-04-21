@@ -20,7 +20,6 @@ async function login(loginUrl, username, password, controllerVersionMajor) {
     };
   }
 
-  // eslint-disable-next-line no-unused-vars
   const [status, contentType, data] = await httpProxy(loginUrl, {
     method: "POST",
     body: JSON.stringify(params),
@@ -66,7 +65,7 @@ export default async function omadaProxyHandler(req, res) {
 
       const controllerVersionMajor = parseInt(controllerVersion.split(".")[0], 10);
 
-      if (![3, 4, 5].includes(controllerVersionMajor)) {
+      if (![3, 4, 5, 6].includes(controllerVersionMajor)) {
         return res.status(500).json({ error: { message: "Error determining controller version", data } });
       }
 
@@ -80,6 +79,7 @@ export default async function omadaProxyHandler(req, res) {
           loginUrl = `${url}/api/v2/login`;
           break;
         case 5:
+        case 6:
           loginUrl = `${url}/${cId}/api/v2/login`;
           break;
         default:
@@ -95,8 +95,8 @@ export default async function omadaProxyHandler(req, res) {
 
       if (loginStatus !== 200 || loginResponseData.errorCode > 0) {
         return res
-          .status(status)
-          .json({ error: { message: "Error logging in to Oamda controller", url: loginUrl, data: loginResponseData } });
+          .status(loginStatus)
+          .json({ error: { message: "Error logging in to Omada controller", url: loginUrl, data: loginResponseData } });
       }
 
       const { token } = loginResponseData.result;
@@ -122,6 +122,7 @@ export default async function omadaProxyHandler(req, res) {
           sitesUrl = `${url}/api/v2/sites?token=${token}&currentPage=1&currentPageSize=1000`;
           break;
         case 5:
+        case 6:
           sitesUrl = `${url}/${cId}/api/v2/sites?token=${token}&currentPage=1&currentPageSize=1000`;
           break;
         default:
@@ -207,8 +208,8 @@ export default async function omadaProxyHandler(req, res) {
         connectedAp = siteResponseData.result.connectedAp;
         activeUser = siteResponseData.result.activeUser;
         alerts = siteResponseData.result.alerts;
-      } else if (controllerVersionMajor === 4 || controllerVersionMajor === 5) {
-        const siteName = controllerVersionMajor === 5 ? site.id : site.key;
+      } else if ([4, 5, 6].includes(controllerVersionMajor)) {
+        const siteName = controllerVersionMajor > 4 ? site.id : site.key;
         const siteStatsUrl =
           controllerVersionMajor === 4
             ? `${url}/api/v2/sites/${siteName}/dashboard/overviewDiagram?token=${token}&currentPage=1&currentPageSize=1000`
@@ -224,7 +225,13 @@ export default async function omadaProxyHandler(req, res) {
 
         if (status !== 200 || siteResponseData.errorCode > 0) {
           logger.debug(`HTTP ${status} getting stats for site ${widget.site} with message ${siteResponseData.msg}`);
-          return res.status(500).send(data);
+          return res.status(status === 200 ? 500 : status).json({
+            error: {
+              message: "Error getting stats",
+              url: siteStatsUrl,
+              data: siteResponseData,
+            },
+          });
         }
 
         const alertUrl =
@@ -232,7 +239,6 @@ export default async function omadaProxyHandler(req, res) {
             ? `${url}/api/v2/sites/${siteName}/alerts/num?token=${token}&currentPage=1&currentPageSize=1000`
             : `${url}/${cId}/api/v2/sites/${siteName}/alerts/num?token=${token}&currentPage=1&currentPageSize=1000`;
 
-        // eslint-disable-next-line no-unused-vars
         [status, contentType, data] = await httpProxy(alertUrl, {
           headers: {
             "Csrf-Token": token,

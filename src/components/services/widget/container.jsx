@@ -1,15 +1,25 @@
-import { useContext } from "react";
+import { useContext, useMemo } from "react";
 import { SettingsContext } from "utils/contexts/settings";
 
 import Error from "./error";
+import { BlockHighlightContext } from "./highlight-context";
+
+import { buildHighlightConfig } from "utils/highlights";
 
 const ALIASED_WIDGETS = {
   pialert: "netalertx",
   hoarder: "karakeep",
+  jellyseerr: "seerr",
+  overseerr: "seerr",
 };
 
 export default function Container({ error = false, children, service }) {
   const { settings } = useContext(SettingsContext);
+
+  const highlightConfig = useMemo(
+    () => buildHighlightConfig(settings?.blockHighlights, service?.widget?.highlight, service?.widget?.type),
+    [settings?.blockHighlights, service?.widget?.highlight, service?.widget?.type],
+  );
 
   if (error) {
     if (settings.hideErrors || service.widget.hide_errors) {
@@ -37,12 +47,12 @@ export default function Container({ error = false, children, service }) {
         if (!field.includes(".")) {
           fullField = `${type}.${field}`;
         }
-        let matches = fullField === child?.props?.label;
+        let matches = fullField === (child?.props?.field || child?.props?.label);
         // check if the field is an 'alias'
         if (matches) {
           return true;
         } else if (ALIASED_WIDGETS[type]) {
-          matches = fullField.replace(type, ALIASED_WIDGETS[type]) === child?.props?.label;
+          matches = fullField.replace(type, ALIASED_WIDGETS[type]) === (child?.props?.field || child?.props?.label);
 
           return matches;
         }
@@ -51,6 +61,11 @@ export default function Container({ error = false, children, service }) {
       }),
     );
   }
+  const content = <div className="relative flex flex-row w-full service-container">{visibleChildren}</div>;
 
-  return <div className="relative flex flex-row w-full service-container">{visibleChildren}</div>;
+  if (!highlightConfig) {
+    return content;
+  }
+
+  return <BlockHighlightContext.Provider value={highlightConfig}>{content}</BlockHighlightContext.Provider>;
 }

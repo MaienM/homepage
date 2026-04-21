@@ -66,6 +66,11 @@
         "wait": "Please wait",
         "empty_data": "Subsystem status unknown"
     },
+    "unifi_drive": {
+        "healthy": "Healthy",
+        "degraded": "Degraded",
+        "no_data": "No storage data available"
+    },
     "docker": {
         "rx": "RX",
         "tx": "TX",
@@ -98,6 +103,16 @@
         "not_available": "Not Available"
     },
     "emby": {
+        "playing": "Playing",
+        "transcoding": "Transcoding",
+        "bitrate": "Bitrate",
+        "no_active": "No Active Streams",
+        "movies": "Movies",
+        "series": "Series",
+        "episodes": "Episodes",
+        "songs": "Songs"
+    },
+    "jellyfin": {
         "playing": "Playing",
         "transcoding": "Transcoding",
         "bitrate": "Bitrate",
@@ -173,6 +188,13 @@
         "bitrate": "Bitrate",
         "no_active": "No Active Streams",
         "plex_connection_error": "Check Plex Connection"
+    },
+    "tracearr": {
+        "no_active": "No Active Streams",
+        "streams": "Streams",
+        "transcodes": "Transcodes",
+        "directplay": "Direct Play",
+        "bitrate": "Bitrate"
     },
     "omada": {
         "connectedAp": "Connected APs",
@@ -272,16 +294,13 @@
         "approved": "Approved",
         "available": "Available"
     },
-    "jellyseerr": {
+    "seerr": {
         "pending": "Pending",
         "approved": "Approved",
-        "available": "Available"
-    },
-    "overseerr": {
-        "pending": "Pending",
+        "available": "Available",
+        "completed": "Completed",
         "processing": "Processing",
-        "approved": "Approved",
-        "available": "Available"
+        "issues": "Open Issues"
     },
     "netalertx": {
         "total": "Total",
@@ -358,6 +377,12 @@
         "routers": "Routers",
         "services": "Services",
         "middleware": "Middleware"
+    },
+    "trilium": {
+        "version": "Version",
+        "notesCount": "Notes",
+        "dbSize": "Database Size",
+        "unknown": "Unknown"
     },
     "navidrome": {
         "nothing_streaming": "No Active Streams",
@@ -441,7 +466,7 @@
         "free": "Free",
         "used": "Used",
         "days": "d",
-        "hours": "घं.",
+        "hours": "h",
         "crit": "Crit",
         "read": "Read",
         "write": "Write",
@@ -525,7 +550,8 @@
         "child_bridges_status": "{{ok}}/{{total}}",
         "up": "Up",
         "pending": "Pending",
-        "down": "Down"
+        "down": "Down",
+        "ok": "Ok"
     },
     "healthchecks": {
         "new": "New",
@@ -568,7 +594,8 @@
     "gluetun": {
         "public_ip": "Public IP",
         "region": "Region",
-        "country": "Country"
+        "country": "Country",
+        "port_forwarded": "Port Forwarded"
     },
     "hdhomerun": {
         "channels": "Channels",
@@ -590,6 +617,15 @@
     "paperlessngx": {
         "inbox": "Inbox",
         "total": "Total"
+    },
+    "pangolin": {
+        "orgs": "Orgs",
+        "sites": "Sites",
+        "resources": "Resources",
+        "targets": "Targets",
+        "traffic": "Traffic",
+        "in": "In",
+        "out": "Out"
     },
     "peanut": {
         "battery_charge": "Battery Charge",
@@ -687,6 +723,10 @@
         "uptime": "Uptime",
         "volumeAvailable": "Available"
     },
+    "dispatcharr": {
+        "channels": "Channels",
+        "streams": "Streams"
+    },
     "mylar": {
         "series": "Series",
         "issues": "Issues",
@@ -751,7 +791,8 @@
     "ghostfolio": {
         "gross_percent_today": "Today",
         "gross_percent_1y": "One year",
-        "gross_percent_max": "All time"
+        "gross_percent_max": "All time",
+        "net_worth": "Net Worth"
     },
     "audiobookshelf": {
         "podcasts": "Podcasts",
@@ -773,6 +814,12 @@
         "authors": "Authors",
         "categories": "Categories",
         "series": "Series"
+    },
+    "booklore": {
+        "libraries": "Libraries",
+        "books": "Books",
+        "reading": "Reading",
+        "finished": "Finished"
     },
     "jdownloader": {
         "downloadCount": "Queue",
@@ -856,7 +903,8 @@
         "physicalRelease": "Physical release",
         "digitalRelease": "Digital release",
         "noEventsToday": "No events for today!",
-        "noEventsFound": "No events found"
+        "noEventsFound": "No events found",
+        "errorWhenLoadingData": "Error when loading calendar data"
     },
     "romm": {
         "platforms": "Platforms",
@@ -1042,5 +1090,100 @@
         "downloads": "Downloads",
         "uploads": "Uploads",
         "sharedFiles": "Files"
+    },
+    "jellystat": {
+        "songs": "Songs",
+        "movies": "Movies",
+        "episodes": "Episodes",
+        "other": "Other"
+    },
+    "checkmk": {
+        "serviceErrors": "Service issues",
+        "hostErrors": "Host issues"
+    },
+    "komodo": {
+        "total": "Total",
+        "running": "Running",
+        "stopped": "Stopped",
+        "down": "Down",
+        "unhealthy": "Unhealthy",
+        "unknown": "Unknown",
+        "servers": "Servers",
+        "stacks": "Stacks",
+        "containers": "Containers"
+    },
+    "filebrowser": {
+        "available": "Available",
+        "used": "Used",
+        "total": "Total"
+    },
+    "wallos": {
+        "activeSubscriptions": "Subscriptions",
+        "thisMonthlyCost": "This Month",
+        "nextMonthlyCost": "Next Month",
+        "previousMonthlyCost": "Prev. Month",
+        "nextRenewingSubscription": "Next Payment"
+    },
+    "unraid": {
+        "STARTED": "Started",
+        "STOPPED": "Stopped",
+        "NEW_ARRAY": "New Array",
+        "RECON_DISK": "Reconstructing Disk",
+        "DISABLE_DISK": "Disk Disabled",
+        "SWAP_DSBL": "Swap Disable",
+        "INVALID_EXPANSION": "Invalid Expansion",
+        "PARITY_NOT_BIGGEST": "Parity Not Biggest",
+        "TOO_MANY_MISSING_DISKS": "Too Many Missing Disks",
+        "NEW_DISK_TOO_SMALL": "New Disk Too Small",
+        "NO_DATA_DISKS": "No Data Disks",
+        "notifications": "Notifications",
+        "status": "Status",
+        "cpu": "CPU",
+        "memoryUsed": "Memory Used",
+        "memoryAvailable": "Memory Available",
+        "arrayUsed": "Array Used",
+        "arrayFree": "Array Free",
+        "poolUsed": "{{pool}} Used",
+        "poolFree": "{{pool}} Free"
+    },
+    "backrest": {
+        "num_plans": "Plans",
+        "num_success_30": "Successes",
+        "num_failure_30": "Failures",
+        "num_success_latest": "Succeeding",
+        "num_failure_latest": "Failing",
+        "bytes_added_30": "Bytes Added"
+    },
+    "yourspotify": {
+        "songs": "Songs",
+        "time": "Time",
+        "artists": "Artists"
+    },
+    "arcane": {
+        "containers": "Containers",
+        "images": "Images",
+        "image_updates": "Image Updates",
+        "images_unused": "Unused",
+        "environment_required": "Environment ID Required"
+    },
+    "dockhand": {
+        "running": "Running",
+        "stopped": "Stopped",
+        "cpu": "CPU",
+        "memory": "Memory",
+        "images": "Images",
+        "volumes": "Volumes",
+        "events_today": "Events Today",
+        "pending_updates": "Pending Updates",
+        "stacks": "Stacks",
+        "paused": "Paused",
+        "total": "Total",
+        "environment_not_found": "Environment Not Found"
+    },
+    "sparkyfitness": {
+        "eaten": "Eaten",
+        "burned": "Burned",
+        "remaining": "Remaining",
+        "steps": "Steps"
     }
 }
