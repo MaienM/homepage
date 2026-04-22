@@ -40,13 +40,13 @@ export function set(obj, path, val) {
   const keys = path.split(/[.[\]]+/).filter(Boolean);
 
   // Pop the last key to set the value later
-  const lastKey = keys.pop();
+  const lastKey = keys[keys.length - 1];
 
   // Prevent setting dangerous keys like __proto__
   if (/^(__proto__|constructor|prototype)$/.test(lastKey)) return obj;
 
   // Reduce the object to the nested object where we want to set the value
-  keys.reduce((acc, key, i) => {
+  keys.slice(0, -1).reduce((acc, key, i) => {
     // Again, block dangerous keys
     if (/^(__proto__|constructor|prototype)$/.test(key)) return {};
 

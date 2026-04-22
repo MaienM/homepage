@@ -13,8 +13,9 @@ describe("utils/config/shvl", () => {
   it("set creates nested objects/arrays as needed", () => {
     const obj = {};
     set(obj, "a.b[0].c", 123);
+    set(obj, "d.e[0]", 456);
 
-    expect(obj).toEqual({ a: { b: [{ c: 123 }] } });
+    expect(obj).toEqual({ a: { b: [{ c: 123 }] }, d: { e: [456] } });
   });
 
   it("set blocks prototype pollution", () => {
