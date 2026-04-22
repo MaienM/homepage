@@ -92,45 +92,42 @@ export function isDiscoverable(resource, instanceName) {
 }
 
 export async function constructedServiceFromResource(resource) {
+  const annotations = resource.metadata.annotations;
+
   let constructedService = {
-    namespace: resource.metadata.namespace,
-    external: false,
     type: "service",
+    app: await resolveValue(annotations[`${ANNOTATION_BASE}/app`], resource.metadata.name),
+    namespace: resource.metadata.namespace,
+    href: await resolveValue(annotations[`${ANNOTATION_BASE}/href`], getUrlSchema(resource)),
+    name: await resolveValue(annotations[`${ANNOTATION_BASE}/name`], resource.metadata.name),
+    group: await resolveValue(annotations[`${ANNOTATION_BASE}/group`], "Kubernetes"),
+    weight: await resolveValue(annotations[`${ANNOTATION_BASE}/weight`], "0"),
+    icon: await resolveValue(annotations[`${ANNOTATION_BASE}/icon`], ""),
+    description: await resolveValue(annotations[`${ANNOTATION_BASE}/description`], ""),
+    external: await resolveValue(
+      annotations[`${ANNOTATION_BASE}/external`],
+      false,
+      (v) => String(v).toLowerCase() === "true",
+    ),
+    podSelector: await resolveValue(annotations[`${ANNOTATION_BASE}/pod-selector`]),
+    ping: await resolveValue(annotations[`${ANNOTATION_BASE}/ping`]),
+    siteMonitor: await resolveValue(annotations[`${ANNOTATION_BASE}/siteMonitor`]),
+    statusStyle: await resolveValue(annotations[`${ANNOTATION_BASE}/statusStyle`]),
+    allowUsers: await resolveValue(annotations[`${ANNOTATION_BASE}/allowUsers`], undefined, (v) => v.split(",")),
+    allowGroups: await resolveValue(annotations[`${ANNOTATION_BASE}/allowGroups`], undefined, (v) => v.split(",")),
   };
-  await setPropertyOnService(constructedService, resource, "app", resource.metadata.name);
-  await setPropertyOnService(constructedService, resource, "href", await getUrlSchema(resource));
-  await setPropertyOnService(constructedService, resource, "name", resource.metadata.name);
-  await setPropertyOnService(constructedService, resource, "group", "Kubernetes");
-  await setPropertyOnService(constructedService, resource, "weight", "0");
-  await setPropertyOnService(constructedService, resource, "icon", "");
-  await setPropertyOnService(constructedService, resource, "description", "");
-  if (resource.metadata.annotations[`${ANNOTATION_BASE}/external`]) {
-    constructedService.external =
-      String(await resolveAsRef(resource.metadata.annotations[`${ANNOTATION_BASE}/external`])).toLowerCase() === "true";
-  }
-  if (ingress.metadata.annotations[`${ANNOTATION_BASE}/allowUsers`]) {
-    constructedService.allowUsers = ingress.metadata.annotations[`${ANNOTATION_BASE}/allowUsers`].split(",");
-  }
-  if (ingress.metadata.annotations[`${ANNOTATION_BASE}/allowGroups`]) {
-    constructedService.allowGroups = ingress.metadata.annotations[`${ANNOTATION_BASE}/allowGroups`].split(",");
-  }
 
-  await setPropertyOnService(constructedService, resource, "pod-selector");
-  await setPropertyOnService(constructedService, resource, "ping");
-  await setPropertyOnService(constructedService, resource, "siteMonitor");
-  await setPropertyOnService(constructedService, resource, "statusStyle");
-
-  await Promise.all(
-    Object.keys(resource.metadata.annotations).map(async (annotation) => {
-      if (annotation.startsWith(ANNOTATION_WIDGET_BASE)) {
-        shvl.set(
-          constructedService,
-          annotation.replace(`${ANNOTATION_BASE}/`, ""),
-          await resolveAsRef(resource.metadata.annotations[annotation]),
-        );
-      }
-    }),
+  const widgetProperties = await Promise.all(
+    Object.keys(annotations)
+      .filter((annotation) => annotation.startsWith(ANNOTATION_WIDGET_BASE))
+      .map(async (annotation) => [
+        annotation.replace(`${ANNOTATION_BASE}/`, ""),
+        await resolveValue(annotations[annotation]),
+      ]),
   );
+  for (const [path, value] of widgetProperties) {
+    shvl.set(constructedService, path, value);
+  }
 
   try {
     constructedService = JSON.parse(substituteEnvironmentVars(JSON.stringify(constructedService)));
@@ -142,24 +139,18 @@ export async function constructedServiceFromResource(resource) {
   return constructedService;
 }
 
-async function setPropertyOnService(service, resource, propertyName, defaultValue = undefined) {
-  if (resource.metadata.annotations[`${ANNOTATION_BASE}/${propertyName}`]) {
-    service[propertyName] = await resolveAsRef(resource.metadata.annotations[`${ANNOTATION_BASE}/${propertyName}`]);
-  } else if (defaultValue !== undefined) {
-    service[propertyName] = defaultValue;
+async function resolveValue(value, defaultValue, transform) {
+  if (value?.startsWith(CONFIGMAP_REF_PREFIX)) {
+    const [namespace, name, property] = value.replace(CONFIGMAP_REF_PREFIX, "").split("/");
+    const resolved = await getConfigMapPropertyValue(namespace, name, property);
+    return resolveValue(resolved, defaultValue, transform);
+  } else if (value?.startsWith(SECRET_REF_PREFIX)) {
+    const [namespace, name, property] = value.replace(SECRET_REF_PREFIX, "").split("/");
+    const resolved = await getSecretPropertyValue(namespace, name, property);
+    return resolveValue(resolved, defaultValue, transform);
+  } else if (value !== undefined && transform !== undefined) {
+    return transform(value);
+  } else {
+    return value ?? defaultValue;
   }
-}
-
-async function resolveAsRef(value) {
-  if (value.startsWith(SECRET_REF_PREFIX)) {
-    const ref = value.replace(SECRET_REF_PREFIX, "");
-    const [namespace, name, property] = ref.split("/");
-    return await getSecretPropertyValue(namespace, name, property);
-  }
-  if (value.startsWith(CONFIGMAP_REF_PREFIX)) {
-    const ref = value.replace(CONFIGMAP_REF_PREFIX, "");
-    const [namespace, name, property] = ref.split("/");
-    return await getConfigMapPropertyValue(namespace, name, property);
-  }
-  return value;
 }
