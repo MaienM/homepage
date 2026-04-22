@@ -43,6 +43,7 @@ vi.mock("utils/config/kubernetes", () => ({
   HTTPROUTE_API_VERSION: "v1",
   SECRET_REF_PREFIX: "sec.ref#",
   CONFIGMAP_REF_PREFIX: "cm.ref#",
+  JSON_PREFIX: "json#",
   getKubeConfig,
 }));
 
@@ -177,6 +178,57 @@ describe("utils/kubernetes/resource-helpers", () => {
     expect(service.widget.url).toBe("lorem");
     expect(service.widget.key).toBeFalsy();
     expect(substituteEnvironmentVars).toHaveBeenCalled();
+  });
+
+  it("parses & merges json items in annotations", async () => {
+    const kc = getKubeConfig();
+    const crd = kc.makeApiClient();
+    crd.readNamespacedConfigMap = async () => {
+      return {
+        data: {
+          somekey: JSON.stringify({
+            type: "customapi",
+            url: "https://example.com",
+            key: "secret-key",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }),
+        },
+      };
+    };
+
+    const base = "gethomepage.dev";
+    const resource = {
+      kind: "Ingress",
+      metadata: {
+        name: "app",
+        namespace: "ns",
+        annotations: {
+          [`${base}/widget.0`]: "json#cm.ref#ns/dummy/somekey",
+          [`${base}/widget.0.key`]: "override-key",
+          [`${base}/widget.0.headers.Accept`]: "application/json",
+        },
+      },
+      spec: {
+        tls: [{}],
+        rules: [{ host: "example.com", http: { paths: [{ path: "/app" }] } }],
+      },
+    };
+
+    const service = await constructedServiceFromResource(resource);
+
+    expect(service.widget).toEqual([
+      {
+        type: "customapi",
+        url: "https://example.com",
+        key: "override-key",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ]);
   });
 
   it("constructs a href from an HTTPRoute using the gateway listener protocol", async () => {

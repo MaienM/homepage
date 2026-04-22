@@ -61,3 +61,4 @@ export const HTTPROUTE_API_GROUP = "gateway.networking.k8s.io";
 export const HTTPROUTE_API_VERSION = "v1";
 export const SECRET_REF_PREFIX = "sec.ref#";
 export const CONFIGMAP_REF_PREFIX = "cm.ref#";
+export const JSON_PREFIX = "json#";

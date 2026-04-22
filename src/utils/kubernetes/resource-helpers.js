@@ -11,6 +11,7 @@ import {
   getKubeConfig,
   HTTPROUTE_API_GROUP,
   HTTPROUTE_API_VERSION,
+  JSON_PREFIX,
   SECRET_REF_PREFIX,
 } from "utils/config/kubernetes";
 import * as shvl from "utils/config/shvl";
@@ -148,6 +149,13 @@ async function resolveValue(value, defaultValue, transform) {
     const [namespace, name, property] = value.replace(SECRET_REF_PREFIX, "").split("/");
     const resolved = await getSecretPropertyValue(namespace, name, property);
     return resolveValue(resolved, defaultValue, transform);
+  } else if (value?.startsWith(JSON_PREFIX)) {
+    const resolved = await resolveValue(value.replace(JSON_PREFIX, ""), defaultValue, transform);
+    try {
+      return JSON.parse(resolved);
+    } catch (e) {
+      logger.error("error json decoding value: %s", e);
+    }
   } else if (value !== undefined && transform !== undefined) {
     return transform(value);
   } else {
