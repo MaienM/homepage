@@ -29,6 +29,7 @@ const { state, substituteEnvironmentVars, getKubeConfig, logger } = vi.hoisted((
 
 vi.mock("@kubernetes/client-node", () => ({
   CustomObjectsApi: class CustomObjectsApi {},
+  CoreV1Api: class CoreV1Api {},
 }));
 
 vi.mock("utils/config/config", () => ({
@@ -40,6 +41,8 @@ vi.mock("utils/config/kubernetes", () => ({
   ANNOTATION_WIDGET_BASE: "gethomepage.dev/widget.",
   HTTPROUTE_API_GROUP: "gateway.networking.k8s.io",
   HTTPROUTE_API_VERSION: "v1",
+  SECRET_REF_PREFIX: "sec.ref#",
+  CONFIGMAP_REF_PREFIX: "cm.ref#",
   getKubeConfig,
 }));
 
@@ -108,6 +111,71 @@ describe("utils/kubernetes/resource-helpers", () => {
     expect(service.statusStyle).toBe("dot");
     expect(service.widget.type).toBe("kubernetes");
     expect(service.widget.url).toBe("http://x");
+    expect(substituteEnvironmentVars).toHaveBeenCalled();
+  });
+
+  it("resolves references to configmaps & secrets in the annotations", async () => {
+    const kc = getKubeConfig();
+    const crd = kc.makeApiClient();
+    crd.readNamespacedConfigMap = async ({ name }) => {
+      if (name === "good") {
+        return {
+          data: {
+            foo: "hello",
+            bar: "world",
+          },
+        };
+      }
+      throw new Error("not found");
+    };
+    crd.readNamespacedSecret = async ({ name }) => {
+      if (name === "good") {
+        return {
+          data: {
+            foo: Buffer.from("lorem", "utf-8").toString("base64"),
+          },
+        };
+      }
+      throw new Error("not found");
+    };
+
+    const base = "gethomepage.dev";
+    const resource = {
+      kind: "Ingress",
+      metadata: {
+        name: "app",
+        namespace: "ns",
+        annotations: {
+          [`${base}/description`]: "cm.ref#ns/good/foo",
+          [`${base}/icon`]: "cm.ref#ns/good/baz",
+          [`${base}/pod-selector`]: "cm.ref#ns/bad/foo",
+          [`${base}/ping`]: "http://example.com/ping",
+          [`${base}/siteMonitor`]: "http://example.com/health",
+          [`${base}/statusStyle`]: "dot",
+          [`${base}/widget.type`]: "kubernetes",
+          [`${base}/widget.url`]: "sec.ref#ns/good/foo",
+          [`${base}/widget.key`]: "sec.ref#ns/bad/foo",
+        },
+      },
+      spec: {
+        tls: [{}],
+        rules: [{ host: "example.com", http: { paths: [{ path: "/app" }] } }],
+      },
+    };
+
+    const service = await constructedServiceFromResource(resource);
+
+    expect(service.href).toBe("https://example.com/app");
+    expect(service.external).toBe(false);
+    expect(service.description).toBe("hello");
+    expect(service.icon).toBeFalsy();
+    expect(service.podSelector).toBeFalsy();
+    expect(service.ping).toBe("http://example.com/ping");
+    expect(service.siteMonitor).toBe("http://example.com/health");
+    expect(service.statusStyle).toBe("dot");
+    expect(service.widget.type).toBe("kubernetes");
+    expect(service.widget.url).toBe("lorem");
+    expect(service.widget.key).toBeFalsy();
     expect(substituteEnvironmentVars).toHaveBeenCalled();
   });
 
