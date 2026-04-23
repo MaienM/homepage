@@ -198,6 +198,9 @@ export async function servicesFromKubernetes() {
         .filter((resource) => kubernetes.isDiscoverable(resource, instanceName))
         .map(async (resource) => kubernetes.constructedServiceFromResource(resource)),
     );
+    if (process.env.DUMP_K8S_SERVICES) {
+      await fs.writeFile(process.env.DUMP_K8S_SERVICES, yaml.dump(services));
+    }
 
     // map service groups
     const mappedServiceGroups = services.reduce((groups, serverService) => {
