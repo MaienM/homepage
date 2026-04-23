@@ -129,6 +129,10 @@ export async function constructedServiceFromResource(resource) {
   for (const [path, value] of widgetProperties) {
     shvl.set(constructedService, path, value);
   }
+  if (Array.isArray(constructedService.widget)) {
+    constructedService.widgets = constructedService.widget;
+    constructedService.widget = undefined;
+  }
 
   try {
     constructedService = JSON.parse(substituteEnvironmentVars(JSON.stringify(constructedService)));

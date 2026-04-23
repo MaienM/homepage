@@ -218,7 +218,7 @@ describe("utils/kubernetes/resource-helpers", () => {
 
     const service = await constructedServiceFromResource(resource);
 
-    expect(service.widget).toEqual([
+    expect(service.widgets).toEqual([
       {
         type: "customapi",
         url: "https://example.com",
