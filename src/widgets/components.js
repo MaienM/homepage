@@ -13,6 +13,7 @@ const components = {
   backrest: dynamic(() => import("./backrest/component")),
   bazarr: dynamic(() => import("./bazarr/component")),
   beszel: dynamic(() => import("./beszel/component")),
+  bookmarks: dynamic(() => import("./bookmarks/component")),
   booklore: dynamic(() => import("./booklore/component")),
   caddy: dynamic(() => import("./caddy/component")),
   calendar: dynamic(() => import("./calendar/component")),

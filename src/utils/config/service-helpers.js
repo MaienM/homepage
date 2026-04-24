@@ -273,6 +273,10 @@ export function cleanServiceGroups(groups) {
           // beszel
           systemId,
 
+          // bookmarks,
+          bookmarks,
+          layout,
+
           // calendar
           firstDayInWeek,
           integrations,
@@ -486,6 +490,11 @@ export function cleanServiceGroups(groups) {
 
         if (type === "beszel") {
           if (systemId) widget.systemId = systemId;
+        }
+
+        if (type === "bookmarks") {
+          if (bookmarks) widget.bookmarks = bookmarks;
+          if (layout) widget.layout = layout;
         }
 
         if (type === "coinmarketcap") {
