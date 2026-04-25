@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { state, getServiceWidget, calendarProxy } = vi.hoisted(() => ({
+const { state, getServiceItem, getServiceWidget, calendarProxy } = vi.hoisted(() => ({
   state: {
     genericResult: { ok: true },
   },
+  getServiceItem: vi.fn(),
   getServiceWidget: vi.fn(),
   calendarProxy: vi.fn(),
 }));
@@ -12,7 +13,10 @@ vi.mock("utils/logger", () => ({
   default: () => ({ debug: vi.fn(), error: vi.fn() }),
 }));
 
-vi.mock("utils/config/service-helpers", () => ({ default: getServiceWidget }));
+vi.mock("utils/config/service-helpers", () => ({
+  default: getServiceWidget,
+  getServiceItem,
+}));
 
 const handlerFn = vi.hoisted(() => ({ handler: vi.fn() }));
 vi.mock("utils/proxy/handlers/generic", () => ({ default: handlerFn.handler }));
@@ -60,6 +64,21 @@ vi.mock("widgets/widgets", () => ({
       proxyHandler: handlerFn.handler,
     },
   },
+}));
+
+vi.mock("utils/config/config", () => ({
+  getSettings: () => ({
+    identity: {},
+  }),
+}));
+
+vi.mock("utils/identity/identity-helpers", () => ({
+  identityAllow: (_, item) => !item?.allowUsers || item.allowUsers.includes("testuser"),
+  readIdentitySettings: () => ({
+    provider: {
+      getIdentity: vi.fn(),
+    },
+  }),
 }));
 
 import servicesProxy from "pages/api/services/proxy";
@@ -356,5 +375,19 @@ describe("pages/api/services/proxy", () => {
 
     expect(res.statusCode).toBe(500);
     expect(res.body).toEqual({ error: "Unexpected error" });
+  });
+
+  it("returns 403 when the logged in user doesn't have access to the service", async () => {
+    getServiceItem.mockResolvedValue({
+      allowUsers: ["otheruser"],
+    });
+
+    const req = { method: "GET", query: { group: "g", service: "s", index: "0", endpoint: "any" } };
+    const res = createMockRes();
+
+    await servicesProxy(req, res);
+
+    expect(res.statusCode).toBe(403);
+    expect(res.body).toEqual({ error: "Insufficient permissions" });
   });
 });

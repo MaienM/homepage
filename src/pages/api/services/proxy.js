@@ -1,4 +1,6 @@
-import getServiceWidget from "utils/config/service-helpers";
+import { getSettings } from "utils/config/config";
+import getServiceWidget, { getServiceItem } from "utils/config/service-helpers";
+import { identityAllow, readIdentitySettings } from "utils/identity/identity-helpers";
 import createLogger from "utils/logger";
 import { formatApiCall } from "utils/proxy/api-helpers";
 import genericProxyHandler from "utils/proxy/handlers/generic";
@@ -12,6 +14,12 @@ export default async function handler(req, res) {
     const { service, group, index } = req.query;
     const serviceWidget = await getServiceWidget(group, service, index);
     let type = serviceWidget?.type;
+
+    // validate that the user is allowed to view this service.
+    const { provider } = readIdentitySettings(getSettings().identity);
+    if (!identityAllow(provider.getIdentity(req), await getServiceItem(group, service))) {
+      return res.status(403).json({ error: "Insufficient permissions" });
+    }
 
     // exceptions
     if (type === "calendar") type = "ical";
