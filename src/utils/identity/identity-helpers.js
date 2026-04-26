@@ -35,9 +35,18 @@ function filterAllowedItems(perms, idGroups, groups, groupKey) {
 }
 
 function filterServiceWidget(perms, widget) {
+  // Filter entire widget.
   if (!identityAllow(perms, widget)) {
     return undefined;
   }
+
+  // Filter widget fields.
+  if (widget.fields) {
+    widget.fields = widget.fields
+      .filter((field) => (typeof field === "object" ? identityAllow(perms, field) : true))
+      .flatMap((field) => (typeof field === "object" ? field.fields : field));
+  }
+
   return widget;
 }
 
