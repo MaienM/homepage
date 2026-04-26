@@ -15,9 +15,10 @@ export default async function handler(req, res) {
     const serviceWidget = await getServiceWidget(group, service, index);
     let type = serviceWidget?.type;
 
-    // validate that the user is allowed to view this service.
+    // validate that the user is allowed to view this service/widget.
     const { provider } = readIdentitySettings(getSettings().identity);
-    if (!identityAllow(provider.getIdentity(req), await getServiceItem(group, service))) {
+    const perms = provider.getIdentity(req);
+    if (!identityAllow(perms, await getServiceItem(group, service)) || !identityAllow(perms, serviceWidget)) {
       return res.status(403).json({ error: "Insufficient permissions" });
     }
 

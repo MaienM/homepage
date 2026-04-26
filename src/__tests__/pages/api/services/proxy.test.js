@@ -390,4 +390,18 @@ describe("pages/api/services/proxy", () => {
     expect(res.statusCode).toBe(403);
     expect(res.body).toEqual({ error: "Insufficient permissions" });
   });
+
+  it("returns 403 when the logged in user doesn't have access to the widget", async () => {
+    getServiceWidget.mockResolvedValue({
+      allowUsers: ["otheruser"],
+    });
+
+    const req = { method: "GET", query: { group: "g", service: "s", index: "0", endpoint: "any" } };
+    const res = createMockRes();
+
+    await servicesProxy(req, res);
+
+    expect(res.statusCode).toBe(403);
+    expect(res.body).toEqual({ error: "Insufficient permissions" });
+  });
 });

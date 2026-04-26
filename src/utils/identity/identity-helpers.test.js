@@ -104,6 +104,75 @@ describe("filterAllowedServices", () => {
       },
     ]);
   });
+
+  it("should filter service widgets", () => {
+    const services = [
+      {
+        name: "Group 1",
+        services: [
+          {
+            name: "Service 1",
+            widget: {
+              type: "foo",
+              allowUsers: ["testuser"],
+            },
+          },
+          {
+            name: "Service 2",
+            widget: {
+              type: "bar",
+              allowUsers: ["otheruser"],
+            },
+          },
+          {
+            name: "Service 3",
+            widgets: [
+              {
+                type: "foo",
+                allowUsers: ["testuser"],
+              },
+              {
+                type: "bar",
+                allowUsers: ["otheruser"],
+              },
+              {
+                type: "baz",
+              },
+            ],
+          },
+        ],
+      },
+    ];
+    expect(filterAllowedServices(PERMS, [], services)).toEqual([
+      {
+        name: "Group 1",
+        services: [
+          {
+            name: "Service 1",
+            widget: {
+              type: "foo",
+              allowUsers: ["testuser"],
+            },
+          },
+          {
+            name: "Service 2",
+          },
+          {
+            name: "Service 3",
+            widgets: [
+              {
+                type: "foo",
+                allowUsers: ["testuser"],
+              },
+              {
+                type: "baz",
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+  });
 });
 
 describe("filterAllowedBookmarks", () => {

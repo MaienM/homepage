@@ -34,6 +34,23 @@ function filterAllowedItems(perms, idGroups, groups, groupKey) {
     .filter((group) => group[groupKey].length);
 }
 
+function filterServiceWidget(perms, widget) {
+  if (!identityAllow(perms, widget)) {
+    return undefined;
+  }
+  return widget;
+}
+
+function filterServiceWidgets(perms, service) {
+  if (service.widget) {
+    service.widget = filterServiceWidget(perms, service.widget);
+  }
+  service.widgets = service.widgets
+    ?.map((widget) => filterServiceWidget(perms, widget))
+    .filter((widget) => widget !== undefined);
+  return service;
+}
+
 export function readIdentitySettings({ provider, groups } = {}) {
   let groupArray = [];
   if (groups) {
@@ -62,8 +79,15 @@ export async function fetchWithIdentity(key, context) {
   return getProviderByKey(context.provider).fetch([key, context]);
 }
 
-export const filterAllowedServices = (perms, idGroups, services) =>
-  filterAllowedItems(perms, idGroups, services, "services");
+export const filterAllowedServices = (perms, idGroups, services) => {
+  const groups = filterAllowedItems(perms, idGroups, services, "services");
+  groups.forEach((group) => {
+    if (group.services) {
+      group.services = group.services.map((service) => filterServiceWidgets(perms, service));
+    }
+  });
+  return groups;
+};
 export const filterAllowedBookmarks = (perms, idGroups, bookmarks) =>
   filterAllowedItems(perms, idGroups, bookmarks, "bookmarks");
 export const filterAllowedWidgets = (perms, widgets) =>

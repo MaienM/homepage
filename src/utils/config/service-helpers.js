@@ -262,6 +262,8 @@ export function cleanServiceGroups(groups) {
           hideErrors,
           highlight,
           type,
+          allowUsers,
+          allowGroups,
 
           // arcane
           env,
@@ -461,6 +463,8 @@ export function cleanServiceGroups(groups) {
           hide_errors: hideErrors || false,
           service_name: service.name,
           service_group: serviceGroup.name,
+          allowUsers: allowUsers ?? null,
+          allowGroups: allowGroups ?? null,
           index,
         };
 
