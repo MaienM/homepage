@@ -10,6 +10,10 @@ vi.mock("utils/config/api-response", () => ({
   widgetsResponse,
 }));
 
+vi.mock("utils/config/config", () => ({
+  getSettings: () => ({}),
+}));
+
 import handler from "pages/api/widgets/index";
 
 describe("pages/api/widgets/index", () => {

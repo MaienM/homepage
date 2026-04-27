@@ -39,6 +39,12 @@ vi.mock("utils/config/config", () => config);
 vi.mock("utils/config/widget-helpers", () => widgetHelpers);
 vi.mock("utils/config/service-helpers", () => serviceHelpers);
 
+vi.mock("utils/identity/identity-helpers", () => ({
+  filterAllowedBookmarks: (_1, _2, bookmarks) => bookmarks,
+  filterAllowedServices: (_1, _2, services) => services,
+  filterAllowedWidgets: (_, widgets) => widgets,
+}));
+
 import { bookmarksResponse, servicesResponse, widgetsResponse } from "./api-response";
 
 describe("utils/config/api-response", () => {

@@ -60,6 +60,7 @@ const {
   const logger = { error: vi.fn() };
 
   const useSWR = vi.fn((key) => {
+    if (Array.isArray(key)) key = key[0];
     if (key === "/api/validate") return { data: state.validateData };
     if (key === "/api/hash") return { data: state.hashData, mutate: state.mutateHash };
     if (key === "/api/services") return { data: state.servicesData };
@@ -106,6 +107,7 @@ vi.mock("next-i18next/serverSideTranslations", () => ({
 vi.mock("swr", () => ({
   default: useSWR,
   SWRConfig: ({ children }) => children,
+  unstable_serialize: (keys) => keys[0],
 }));
 
 vi.mock("utils/logger", () => ({
@@ -166,7 +168,7 @@ vi.mock("components/toggles/revalidate", () => ({
   default: () => null,
 }));
 
-describe("pages/index getStaticProps", () => {
+describe("pages/index getServerSideProps", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     state.throwIn = null;
@@ -185,8 +187,8 @@ describe("pages/index getStaticProps", () => {
   it("returns initial settings and api fallbacks for swr", async () => {
     getSettings.mockReturnValueOnce({ providers: { x: 1 }, language: "en", title: "Homepage" });
 
-    const { getStaticProps } = await import("pages/index.jsx");
-    const result = await getStaticProps();
+    const { getServerSideProps } = await import("pages/index.jsx");
+    const result = await getServerSideProps({ req: {} });
 
     expect(result.props.initialSettings).toEqual({ language: "en", title: "Homepage" });
     expect(result.props.fallback["/api/services"]).toEqual([{ name: "svc" }]);
@@ -199,8 +201,8 @@ describe("pages/index getStaticProps", () => {
   it("normalizes legacy language codes before requesting translations", async () => {
     getSettings.mockReturnValueOnce({ providers: {}, language: "zh-CN" });
 
-    const { getStaticProps } = await import("pages/index.jsx");
-    await getStaticProps();
+    const { getServerSideProps } = await import("pages/index.jsx");
+    await getServerSideProps({ req: {} });
 
     expect(serverSideTranslations).toHaveBeenCalledWith("zh-Hans");
   });
@@ -209,8 +211,8 @@ describe("pages/index getStaticProps", () => {
     getSettings.mockReturnValueOnce({ providers: {}, language: "de" });
     state.throwIn = "services";
 
-    const { getStaticProps } = await import("pages/index.jsx");
-    const result = await getStaticProps();
+    const { getServerSideProps } = await import("pages/index.jsx");
+    const result = await getServerSideProps({ req: {} });
 
     expect(result.props.initialSettings).toEqual({});
     expect(result.props.fallback["/api/services"]).toEqual([]);

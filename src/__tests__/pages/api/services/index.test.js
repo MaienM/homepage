@@ -10,6 +10,10 @@ vi.mock("utils/config/api-response", () => ({
   servicesResponse,
 }));
 
+vi.mock("utils/config/config", () => ({
+  getSettings: () => ({}),
+}));
+
 import handler from "pages/api/services/index";
 
 describe("pages/api/services/index", () => {

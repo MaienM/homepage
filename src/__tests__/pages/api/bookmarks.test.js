@@ -10,6 +10,10 @@ vi.mock("utils/config/api-response", () => ({
   bookmarksResponse,
 }));
 
+vi.mock("utils/config/config", () => ({
+  getSettings: () => ({}),
+}));
+
 import handler from "pages/api/bookmarks";
 
 describe("pages/api/bookmarks", () => {
