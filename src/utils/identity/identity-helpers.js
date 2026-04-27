@@ -10,7 +10,7 @@ function getProviderByKey(key) {
   return IdentityProviders[key] || NullIdentityProvider;
 }
 
-function identityAllow({ user, groups }, item) {
+export function identityAllow({ user, groups }, item) {
   const groupAllow =
     "allowGroups" in item && item.allowGroups && groups.some((group) => item.allowGroups.includes(group));
   const userAllow = "allowUsers" in item && item.allowUsers && item.allowUsers.includes(user);
