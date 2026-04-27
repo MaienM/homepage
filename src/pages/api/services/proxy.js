@@ -9,6 +9,74 @@ import widgets from "widgets/widgets";
 
 const logger = createLogger("servicesProxy");
 
+export class ResponseFilter {
+  constructor(res, paths) {
+    this.res = res;
+    this.paths = paths;
+
+    ["status", "setHeader"].forEach((key) => {
+      this[key] = (...args) => {
+        this.res[key](...args);
+        return this;
+      };
+    });
+  }
+
+  json(body) {
+    // Decode body.
+    if (body instanceof Buffer) {
+      body = body.toString("utf-8");
+    }
+    if (typeof body === "string") {
+      body = JSON.parse(body);
+    }
+
+    // Filter body & send response.
+    this.res.json(ResponseFilter.filter(body, this.paths));
+  }
+
+  send(body) {
+    this.json(body);
+  }
+
+  write() {
+    throw new Error("Unsupported");
+  }
+
+  static filter(value, paths) {
+    if (Array.isArray(value)) {
+      const invalidPaths = paths.filter((path) => !path.startsWith("*."));
+      if (invalidPaths.length > 0) {
+        throw new Error(`Non-array paths (${JSON.stringify(invalidPaths)}) for array value.`);
+      }
+
+      const subPaths = paths.map((path) => path.substring(2));
+      return value.map((item) => ResponseFilter.filter(item, subPaths));
+    } else if (typeof value === "object" && value !== null) {
+      const invalidPaths = paths.filter((path) => path.startsWith("*."));
+      if (invalidPaths.length > 0) {
+        throw new Error(`Array paths (${JSON.stringify(invalidPaths)}) for object value.`);
+      }
+
+      const result = {};
+      for (const [key, item] of Object.entries(value)) {
+        if (paths.includes(key)) {
+          result[key] = item;
+        } else {
+          const subPaths = paths
+            .filter((path) => path.startsWith(`${key}.`))
+            .map((path) => path.substring(key.length + 1));
+          if (subPaths.length > 0) {
+            result[key] = ResponseFilter.filter(item, subPaths);
+          }
+        }
+      }
+      return result;
+    }
+    throw new Error(`Subpaths (${JSON.stringify(paths)}) for scalar value ${value}.`);
+  }
+}
+
 export default async function handler(req, res) {
   try {
     const { service, group, index } = req.query;
@@ -60,6 +128,22 @@ export default async function handler(req, res) {
           return res.status(403).json({ error: "Unsupported service endpoint" });
         }
 
+        let filteredRes = res;
+        const mappingPerms = serviceWidget?.proxyPerms?.[req.query.endpoint] ?? serviceWidget?.proxyPerms?.["*"];
+        if (mappingPerms === false) {
+          return res.status(403).json({ error: "Disabled service endpoint" });
+        } else if (mappingPerms !== true && mappingPerms !== undefined) {
+          if (!identityAllow(perms, mappingPerms)) {
+            return res.status(403).json({ error: "Insufficient permissions" });
+          }
+          if (mappingPerms.responseFilter) {
+            const keys = mappingPerms.responseFilter
+              .filter((filter) => identityAllow(perms, filter))
+              .flatMap((filter) => filter.paths);
+            filteredRes = new ResponseFilter(res, keys);
+          }
+        }
+
         req.method = mapping?.method || "GET";
         if (mapping?.body) req.body = mapping?.body;
         req.query.endpoint = endpoint;
@@ -99,10 +183,10 @@ export default async function handler(req, res) {
         }
 
         if (endpointProxy instanceof Function) {
-          return await endpointProxy(req, res, map);
+          return await endpointProxy(req, filteredRes, map);
         }
 
-        return await serviceProxyHandler(req, res, map);
+        return await serviceProxyHandler(req, filteredRes, map);
       }
 
       if (widget.allowedEndpoints instanceof RegExp) {

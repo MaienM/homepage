@@ -264,6 +264,7 @@ export function cleanServiceGroups(groups) {
           type,
           allowUsers,
           allowGroups,
+          proxyPerms,
 
           // arcane
           env,
@@ -465,6 +466,7 @@ export function cleanServiceGroups(groups) {
           service_group: serviceGroup.name,
           allowUsers: allowUsers ?? null,
           allowGroups: allowGroups ?? null,
+          proxyPerms: proxyPerms ?? null,
           index,
         };
 

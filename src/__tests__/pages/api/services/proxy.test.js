@@ -81,7 +81,7 @@ vi.mock("utils/identity/identity-helpers", () => ({
   }),
 }));
 
-import servicesProxy from "pages/api/services/proxy";
+import servicesProxy, { ResponseFilter } from "pages/api/services/proxy";
 
 function createMockRes() {
   const res = {
@@ -108,6 +108,7 @@ function createMockRes() {
 describe("pages/api/services/proxy", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getServiceItem.mockReset();
   });
 
   it("maps opaque endpoints using widget.mappings and calls the handler", async () => {
@@ -403,5 +404,216 @@ describe("pages/api/services/proxy", () => {
 
     expect(res.statusCode).toBe(403);
     expect(res.body).toEqual({ error: "Insufficient permissions" });
+  });
+
+  it("returns 403 when the mapping has been disabled (default)", async () => {
+    getServiceWidget.mockResolvedValue({
+      type: "linkwarden",
+      proxyPerms: {
+        "*": false,
+      },
+    });
+
+    const req = { method: "GET", query: { group: "g", service: "s", index: "0", endpoint: "collections" } };
+    const res = createMockRes();
+
+    await servicesProxy(req, res);
+
+    expect(res.statusCode).toBe(403);
+    expect(res.body).toEqual({ error: "Disabled service endpoint" });
+  });
+
+  it("returns 403 when the mapping has been disabled (explicit)", async () => {
+    getServiceWidget.mockResolvedValue({
+      type: "linkwarden",
+      proxyPerms: {
+        collections: false,
+      },
+    });
+
+    const req = { method: "GET", query: { group: "g", service: "s", index: "0", endpoint: "collections" } };
+    const res = createMockRes();
+
+    await servicesProxy(req, res);
+
+    expect(res.statusCode).toBe(403);
+    expect(res.body).toEqual({ error: "Disabled service endpoint" });
+  });
+
+  it("returns 403 when the user doesn't have permission to use the mapping", async () => {
+    getServiceWidget.mockResolvedValue({
+      type: "linkwarden",
+      proxyPerms: {
+        collections: {
+          allowUsers: ["otheruser"],
+        },
+      },
+    });
+
+    const req = { method: "GET", query: { group: "g", service: "s", index: "0", endpoint: "collections" } };
+    const res = createMockRes();
+
+    await servicesProxy(req, res);
+
+    expect(res.statusCode).toBe(403);
+    expect(res.body).toEqual({ error: "Insufficient permissions" });
+  });
+
+  it("returns expected response when the user has permission to use the mapping", async () => {
+    getServiceWidget.mockResolvedValue({
+      type: "linkwarden",
+      proxyPerms: {
+        collections: {
+          allowUsers: ["testuser"],
+        },
+      },
+    });
+    handlerFn.handler.mockImplementation(async (_, res) => res.status(200).json({ foo: 1 }));
+
+    const req = { method: "GET", query: { group: "g", service: "s", index: "0", endpoint: "collections" } };
+    const res = createMockRes();
+
+    await servicesProxy(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({ foo: 1 });
+  });
+
+  it("returns filtered response when the mapping has filters defined", async () => {
+    getServiceWidget.mockResolvedValue({
+      type: "linkwarden",
+      proxyPerms: {
+        collections: {
+          responseFilter: [
+            {
+              paths: ["foo"],
+            },
+            {
+              paths: ["bar", "missing"],
+              allowUsers: ["testuser"],
+            },
+            {
+              paths: ["baz"],
+              allowUsers: ["otheruser"],
+            },
+          ],
+        },
+      },
+    });
+    handlerFn.handler.mockImplementation(async (_, res) => res.status(200).json({ foo: 1, bar: 2, baz: 3 }));
+
+    const req = { method: "GET", query: { group: "g", service: "s", index: "0", endpoint: "collections" } };
+    const res = createMockRes();
+
+    await servicesProxy(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({ foo: 1, bar: 2 });
+  });
+});
+
+describe("ResponseFilter", () => {
+  it("filters top-level objects", () => {
+    expect(
+      ResponseFilter.filter(
+        {
+          foo: 1,
+          bar: 2,
+          baz: 3,
+        },
+        ["foo", "baz"],
+      ),
+    ).toEqual({
+      foo: 1,
+      baz: 3,
+    });
+  });
+
+  it("filters nested objects", () => {
+    expect(
+      ResponseFilter.filter(
+        {
+          foo: {
+            bar: 1,
+            baz: 2,
+          },
+          bar: {
+            foo: 3,
+            baz: 4,
+          },
+          baz: {
+            foo: 5,
+            bar: 6,
+          },
+        },
+        ["foo", "bar.baz"],
+      ),
+    ).toEqual({
+      foo: {
+        bar: 1,
+        baz: 2,
+      },
+      bar: {
+        baz: 4,
+      },
+    });
+  });
+
+  it("filters objects in top-level array", () => {
+    expect(
+      ResponseFilter.filter(
+        [
+          {
+            foo: 1,
+            bar: 2,
+          },
+          {
+            foo: 3,
+            bar: 4,
+          },
+        ],
+        ["*.foo"],
+      ),
+    ).toEqual([{ foo: 1 }, { foo: 3 }]);
+  });
+
+  it("filters objects in nested array", () => {
+    expect(
+      ResponseFilter.filter(
+        {
+          top: {
+            list: [
+              {
+                foo: 1,
+                bar: 2,
+              },
+              {
+                foo: 3,
+                bar: 4,
+              },
+            ],
+          },
+        },
+        ["top.list.*.foo"],
+      ),
+    ).toEqual({
+      top: {
+        list: [{ foo: 1 }, { foo: 3 }],
+      },
+    });
+  });
+
+  it("rejects filtering scalars", () => {
+    expect(() => ResponseFilter.filter(12, ["foo"])).toThrow('Subpaths (["foo"]) for scalar value 12.');
+  });
+
+  it("rejects filtering non-array paths on arrays", () => {
+    expect(() => ResponseFilter.filter([6], ["foo", "*.bar"])).toThrow('Non-array paths (["foo"]) for array value.');
+  });
+
+  it("rejects filtering array paths on objects", () => {
+    expect(() => ResponseFilter.filter({ foo: 1 }, ["foo", "*.bar"])).toThrow(
+      'Array paths (["*.bar"]) for object value.',
+    );
   });
 });
