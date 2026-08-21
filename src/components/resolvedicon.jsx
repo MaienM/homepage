@@ -13,7 +13,7 @@ export default function ResolvedIcon({ icon, width = 32, height = 32, alt = "log
   const { theme } = useContext(ThemeContext);
 
   // direct or relative URLs
-  if (icon.startsWith("http") || icon.startsWith("/")) {
+  if (icon.startsWith("http") || icon.startsWith("data:") || icon.startsWith("/")) {
     return (
       <Image
         src={`${icon}`}

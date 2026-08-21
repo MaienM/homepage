@@ -31,6 +31,11 @@ describe("components/resolvedicon", () => {
     expect(screen.getByTestId("next-image").getAttribute("data-src")).toBe("/icons/x.png");
   });
 
+  it("renders data URL icons via next/image", () => {
+    renderWithContexts(<ResolvedIcon icon="data:<svg></svg>" alt="x" />);
+    expect(screen.getByTestId("next-image").getAttribute("data-src")).toBe("data:<svg></svg>");
+  });
+
   it("renders selfh.st icons for sh- prefix with extension", () => {
     renderWithContexts(<ResolvedIcon icon="sh-test.webp" alt="x" />);
     expect(screen.getByTestId("next-image").getAttribute("data-src")).toContain("/webp/test.webp");
